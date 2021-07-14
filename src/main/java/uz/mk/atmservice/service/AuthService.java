@@ -1,0 +1,128 @@
+package uz.mk.atmservice.service;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import uz.mk.atmservice.entity.Role;
+import uz.mk.atmservice.entity.User;
+import uz.mk.atmservice.entity.enums.RoleName;
+import uz.mk.atmservice.payload.ApiResponse;
+import uz.mk.atmservice.payload.LoginDto;
+import uz.mk.atmservice.payload.RegisterDto;
+import uz.mk.atmservice.repository.CardRepository;
+import uz.mk.atmservice.repository.RoleRepository;
+import uz.mk.atmservice.repository.UserRepository;
+import uz.mk.atmservice.security.JwtProvider;
+import uz.mk.atmservice.utils.CommonUtils;
+
+import java.util.*;
+
+@Service
+public class AuthService implements UserDetailsService {
+
+    @Autowired
+    UserRepository userRepository;
+
+    @Autowired
+    CardRepository cardRepository;
+
+    @Autowired
+    RoleRepository roleRepository;
+
+    private final PasswordEncoder passwordEncoder;
+
+    @Autowired
+    AuthenticationManager authenticationManager;
+
+    @Autowired
+    MailService mailService;
+
+    @Autowired
+    JwtProvider jwtProvider;
+
+    public AuthService(@Lazy PasswordEncoder passwordEncoder) {
+        this.passwordEncoder = passwordEncoder;
+    }
+
+
+    public ApiResponse register(RegisterDto registerDto) {
+
+        Map<String, Object> securityContextHolder = CommonUtils.getPrincipalAndRoleFromSecurityContextHolder();
+        Set<Role> principalUserRoles = (Set<Role>) securityContextHolder.get("principalUserRoles");
+        Role role = roleRepository.findById(registerDto.getRoleId()).get();
+        Set<Role> roleSet = Collections.singleton(role);
+        boolean existsDirectorAuthority = CommonUtils.isExistsAuthority(principalUserRoles, RoleName.ROLE_DIRECTOR) &&
+                CommonUtils.isExistsAuthority(roleSet, RoleName.ROLE_STAFF);
+        boolean existsStaffAuthority = CommonUtils.isExistsAuthority(principalUserRoles, RoleName.ROLE_STAFF);
+
+        if (!(existsDirectorAuthority || existsStaffAuthority)) {
+            return new ApiResponse("You don't have the authority", false);
+        }
+
+        User user = new User();
+        user.setFirstname(registerDto.getFirstname());
+        user.setLastname(registerDto.getLastname());
+        user.setEmail(registerDto.getEmail());
+        user.setPassword(passwordEncoder.encode(registerDto.getPassword()));
+
+        user.setRoles(roleSet);
+
+        String emailCode = UUID.randomUUID().toString();
+        user.setEmailCode(emailCode);
+
+        String subject = "Confirm Account";
+
+        String text = "Your login: " + user.getEmail() + "\n" +
+                "password:" + registerDto.getPassword() + "\n" +
+                "Confirm => http://localhost:8080/auth/verifyEmail?emailCode=" + user.getEmailCode() + "&email=" + user.getEmail();
+        mailService.sendEmail(user.getEmail(), subject, text);
+
+        userRepository.save(user);
+        return new ApiResponse("Successfully registered. A confirmation message has been sent to email to activate the account", true);
+    }
+
+    public ApiResponse verifyEmail(String emailCode, String email) {
+        Optional<User> optionalUser = userRepository.findByEmailAndEmailCode(email, emailCode);
+        if (optionalUser.isPresent()) {
+            User user = optionalUser.get();
+            user.setEnabled(true);
+            user.setEmailCode(null);
+            userRepository.save(user);
+            return new ApiResponse("Account confirmed", true);
+        }
+
+        return new ApiResponse("Account already confirmed", false);
+    }
+
+    public ApiResponse login(LoginDto loginDto) {
+        try {
+            Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(
+                    loginDto.getEmail(),
+                    loginDto.getPassword()
+            ));
+
+            User user = (User) authentication.getPrincipal();
+            String token = jwtProvider.generateToken(loginDto.getEmail(), user.getRoles());
+            return new ApiResponse("Token", true, token);
+        } catch (BadCredentialsException e) {
+            return new ApiResponse("Email or password incorrect", false);
+        }
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        return userRepository.findByEmail(email).orElseThrow(() -> new UsernameNotFoundException(email + " not found"));
+    }
+
+    public UserDetails loadCardByCardNumber(String number) {
+        return cardRepository.findByNumber(number).orElseThrow(() -> new UsernameNotFoundException(number + " not found"));
+    }
+}

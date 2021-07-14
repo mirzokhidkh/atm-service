@@ -11,3 +11,29 @@ insert into card_type(name)
 values ('UZCARD'),
        ('HUMO'),
        ('VISA');
+
+insert into currency(name)
+values ('SUM'),
+       ('US_DOLLAR'),
+       ('RUSSIAN_RUBLE');
+
+insert into banknote(value, currency_id)
+values (1000, 1),
+       (2000, 1),
+       (5000, 1),
+       (10000, 1),
+       (20000, 1),
+       (50000, 1),
+       (100000, 1),
+       (1, 2),
+       (5, 2),
+       (10, 2),
+       (20, 2),
+       (50, 2),
+       (100, 2);
+
+insert into bank(name)
+values ('IPAK YULI BANKI'),
+       ('XALQ BANKI'),
+       ('AGROBANK'),
+       ('ALOQABANK');

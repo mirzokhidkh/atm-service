@@ -20,5 +20,5 @@ public class Currency {
 
     private String name;
 
-    private String country;
+//    private String country;
 }

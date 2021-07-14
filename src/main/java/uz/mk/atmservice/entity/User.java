@@ -35,7 +35,7 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private String password;
 
-    private String position;
+//    private String position;
 
     @ManyToOne
     private Bank bank;
@@ -60,6 +60,12 @@ public class User implements UserDetails {
 
     private boolean enabled ;
 
+    public User(String firstname, String lastname, String email, String password) {
+        this.firstname = firstname;
+        this.lastname = lastname;
+        this.email = email;
+        this.password = password;
+    }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
