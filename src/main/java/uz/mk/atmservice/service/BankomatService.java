@@ -2,6 +2,7 @@ package uz.mk.atmservice.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import uz.mk.atmservice.entity.*;
 import uz.mk.atmservice.entity.enums.RoleName;
 import uz.mk.atmservice.payload.ApiResponse;
@@ -118,16 +119,20 @@ public class BankomatService {
 
 
     //WITHDRAW MONEY FROM BANKOMAT
+    @Transactional
     public ApiResponse withdraw(ClientMoneyDto clientMoneyDto, UUID cardId) {
         Card card = cardRepository.findById(cardId).get();
+        Bankomat bankomat = bankomatRepository.findById(clientMoneyDto.getBankomatId()).get();
+        Double commissionToWithdraw = bankomat.getCommissionSet().getCommissionToWithdraw();
 
         Double summa = clientMoneyDto.getSumma();
-        double newSumma = card.getBalance() - summa;
+        double summaWithCommission = summa * (1 + commissionToWithdraw / 100);
+        double newSumma = card.getBalance() - summaWithCommission;
         if (newSumma < 0) {
             return new ApiResponse("There is not enough money from card to withdraw", false);
         }
 
-        List<Banknote> banknotes = banknoteRepository.findAll();
+        List<Banknote> banknotes = bankomat.getBanknotes();
         List<Banknote> banknoteList = banknotes.stream()
                 .filter(banknote ->
                         summa % banknote.getValue() == 0 && banknote.getCurrency().getId().equals(card.getCurrency().getId()))
@@ -138,23 +143,60 @@ public class BankomatService {
         } else {
             return new ApiResponse("Please enter other summa", false);
         }
+        card.setBalance(newSumma);
 
-        Bankomat bankomat = bankomatRepository.findById(clientMoneyDto.getBankomatId()).get();
-        bankomat.setBalance(bankomat.getBalance() - summa);
-        bankomatRepository.save(bankomat);
         AccountType accountType = accountTypeRepository.findById(clientMoneyDto.getAccountTypeId()).get();
 
 
         Integer value = banknote.getValue();
         double amount = summa / value;
 
-        AccountHistory accountHistory = CommonUtils.createAccountHistory(banknote, (int) amount, card, accountType, bankomat);
+        AccountHistory accountHistory = CommonUtils.createAccountHistory(banknote, (int) amount, card,
+                accountType, bankomat, commissionToWithdraw);
         AccountHistory savedAccountHistory = accountHistoryRepository.save(accountHistory);
 
-        card.setBalance(newSumma);
         cardRepository.save(card);
 
         return new ApiResponse("Money was withdrawn from the card", true, savedAccountHistory);
+    }
+
+
+    //REPLENISH MONEY CARD
+    @Transactional
+    public ApiResponse replenishCard(MoneyDto moneyDto, UUID cardId) {
+        Card card = cardRepository.findById(cardId).get();
+        Bankomat bankomat = bankomatRepository.findById(moneyDto.getBankomatId()).get();
+        Banknote banknote = banknoteRepository.getById(moneyDto.getBanknoteId());
+        List<Banknote> banknotes = bankomat.getBanknotes();
+        boolean anyMatch = banknotes.stream().anyMatch(banknote1 -> banknote1.getId().equals(banknote.getId()));
+        if (!anyMatch) {
+            return new ApiResponse("Money with such a banknote doesn't exists now", false);
+        }
+        Double commissionToReplenish = bankomat.getCommissionSet().getCommissionToReplenish();
+        Integer amount = moneyDto.getAmount();
+        int summaWithCommission = banknote.getValue() * amount;
+        double summaWithoutCommission = (summaWithCommission * 100) / (100 + commissionToReplenish);
+        double newSumma = card.getBalance() + summaWithoutCommission;
+        card.setBalance(newSumma);
+        bankomat.setBalance(bankomat.getBalance() + summaWithCommission);
+
+        boolean anyMatch1 = banknotes.stream()
+                .anyMatch(aBanknote ->
+                        summaWithCommission % aBanknote.getValue() == 0 && aBanknote.getCurrency().getId().equals(card.getCurrency().getId()));
+
+        if (!anyMatch1) {
+            return new ApiResponse("Please enter other summa", false);
+        }
+
+        AccountType accountType = accountTypeRepository.findById(moneyDto.getAccountTypeId()).get();
+
+        AccountHistory accountHistory = CommonUtils.createAccountHistory(banknote, amount, card,
+                accountType, bankomat, commissionToReplenish);
+        AccountHistory savedAccountHistory = accountHistoryRepository.save(accountHistory);
+        bankomatRepository.save(bankomat);
+        cardRepository.save(card);
+
+        return new ApiResponse("The money fell on the card", true, savedAccountHistory);
     }
 
 

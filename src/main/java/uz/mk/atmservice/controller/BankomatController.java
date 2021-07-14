@@ -36,8 +36,13 @@ public class BankomatController {
     @PostMapping("/bankomat/withdraw")
     public HttpEntity<?> withdraw(@RequestBody ClientMoneyDto clientMoneyDto, @RequestParam String cardId) {
         ApiResponse response = bankomatService.withdraw(clientMoneyDto, UUID.fromString(cardId));
-        return ResponseEntity.status(response.isSuccess() ? 202 : 403).body(response);
+        return ResponseEntity.status(response.isSuccess() ? 200 : 403).body(response);
     }
 
+    @PostMapping("/bankomat/replenishCard")
+    public HttpEntity<?> replenishCard(@RequestBody MoneyDto moneyDto, @RequestParam String cardId) {
+        ApiResponse response = bankomatService.replenishCard(moneyDto, UUID.fromString(cardId));
+        return ResponseEntity.status(response.isSuccess() ? 200 : 403).body(response);
+    }
 
 }

@@ -35,13 +35,15 @@ public class CommonUtils {
     }
 
 
-    public static AccountHistory createAccountHistory(Banknote banknote, int amount, Card card, AccountType accountType, Bankomat bankomat) {
+    public static AccountHistory createAccountHistory(
+            Banknote banknote, int amount, Card card, AccountType accountType, Bankomat bankomat,Double commissionPercentage) {
         AccountHistory accountHistory = new AccountHistory();
         accountHistory.setBanknote(banknote);
         accountHistory.setAmount(amount);
         accountHistory.setCard(card);
         accountHistory.setAccountType(accountType);
         accountHistory.setBankomat(bankomat);
+        accountHistory.setCommissionPercentage(commissionPercentage);
         return accountHistory;
     }
 

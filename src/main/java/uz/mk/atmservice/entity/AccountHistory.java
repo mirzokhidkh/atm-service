@@ -25,6 +25,9 @@ public class AccountHistory {
     @Transient
     private Double summa;
 
+//    @Transient
+//    private Double summaWithCommission;
+
     private Integer amount;
 
     @ManyToOne
@@ -36,6 +39,8 @@ public class AccountHistory {
     @ManyToOne
     private Bankomat bankomat;
 
+    private Double commissionPercentage;
+
     @Column(updatable = false, nullable = false)
     @CreationTimestamp
     private Timestamp date;
@@ -45,4 +50,11 @@ public class AccountHistory {
         summa = Double.valueOf(amount * value);
         return summa;
     }
+
+//    public Double getSummaWithCommission() {
+//        Integer value = banknote.getValue();
+//        summaWithCommission = (double) (amount * value) * (1 + commission_percentage/100);
+//        return summaWithCommission;
+//    }
+
 }
