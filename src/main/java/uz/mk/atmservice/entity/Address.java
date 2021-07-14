@@ -26,6 +26,12 @@ public class Address {
 
     private String district;
 
+    public Address(String place, String street, String district) {
+        this.place = place;
+        this.street = street;
+        this.district = district;
+    }
+
     @CreatedBy
     private UUID createdBy;
 

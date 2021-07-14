@@ -1,7 +1,8 @@
 insert into role (name)
 values ('ROLE_DIRECTOR'),
        ('ROLE_STAFF'),
-       ('ROLE_CLIENT');
+       ('ROLE_CLIENT'),
+       ('ROLE_CARD');
 
 insert into account_type(name)
 values ('INCOME'),

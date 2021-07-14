@@ -51,7 +51,7 @@ public class JwtFilter extends OncePerRequestFilter {
             UserDetails userDetails = authService.loadCardByCardNumber(cardNumber);
             if (passwordEncoder.matches(pinCode, userDetails.getPassword())) {
                 UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
-                        userDetails, null);
+                        userDetails, null,userDetails.getAuthorities());
                 SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
             }
 

@@ -3,8 +3,7 @@ package uz.mk.atmservice.utils;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import uz.mk.atmservice.entity.Role;
-import uz.mk.atmservice.entity.User;
+import uz.mk.atmservice.entity.*;
 import uz.mk.atmservice.entity.enums.RoleName;
 
 import java.util.HashMap;
@@ -35,6 +34,16 @@ public class CommonUtils {
         return roles.stream().anyMatch(role -> role.getName().name().contains(roleName));
     }
 
+
+    public static AccountHistory createAccountHistory(Banknote banknote, int amount, Card card, AccountType accountType, Bankomat bankomat) {
+        AccountHistory accountHistory = new AccountHistory();
+        accountHistory.setBanknote(banknote);
+        accountHistory.setAmount(amount);
+        accountHistory.setCard(card);
+        accountHistory.setAccountType(accountType);
+        accountHistory.setBankomat(bankomat);
+        return accountHistory;
+    }
 
     public static Integer generateCode() {
         return new Random().nextInt((999999 - 100000) + 1) + 100000;

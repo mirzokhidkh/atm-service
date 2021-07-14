@@ -41,4 +41,5 @@ public class ReplenishAtmHistory {
         summa = Double.valueOf(amount * value);
         return summa;
     }
+
 }

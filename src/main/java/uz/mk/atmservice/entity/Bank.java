@@ -1,13 +1,13 @@
 package uz.mk.atmservice.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import javax.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -19,4 +19,11 @@ public class Bank {
     private Integer id;
 
     private String name;
+
+    @JsonIgnore
+    @OneToMany(
+            mappedBy = "bank",
+            orphanRemoval = true,
+            cascade = CascadeType.ALL)
+    private List<Bankomat> bankomatList = new ArrayList<>();
 }

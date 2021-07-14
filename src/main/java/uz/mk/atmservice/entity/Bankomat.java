@@ -1,8 +1,11 @@
 package uz.mk.atmservice.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -25,10 +28,13 @@ public class Bankomat {
 
     private Double minMoney;
 
-    @ManyToOne
+    private Double balance = 0.0;
+
+    @ManyToOne(cascade = CascadeType.ALL)
     private CommissionSet commissionSet;
 
-    @OneToOne
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    @OneToOne(fetch = FetchType.EAGER, cascade = CascadeType.ALL)
     private Address address;
 
     @ManyToOne

@@ -17,6 +17,7 @@ import javax.validation.constraints.Size;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.UUID;
 
@@ -30,11 +31,9 @@ public class Card implements UserDetails {
     @GeneratedValue
     private UUID id;
 
-    @Length(min = 16)
     @Column(unique = true, nullable = false, length = 16)
     private String number;
 
-    @Size(min = 3, max = 4)
     @Column(nullable = false)
     private String cvvCode;
 
@@ -44,17 +43,24 @@ public class Card implements UserDetails {
     @Column(nullable = false)
     private Date validityPeriod;
 
-    @Length(min = 4)
     @Column(nullable = false)
     private String code;
+
+    private Double balance = 0.0;
 
     @ManyToOne
     private CardType cardType;
 
     @ManyToOne
+    private Currency currency;
+
+    @ManyToOne
     private Bank bank;
 
     private boolean status;
+
+    @ManyToOne
+    private Role role;
 
     private boolean accountNonExpired = true;
 
@@ -64,7 +70,7 @@ public class Card implements UserDetails {
 
     private boolean enabled = true;
 
-    @Column(updatable = false,nullable = false)
+    @Column(updatable = false, nullable = false)
     @CreationTimestamp
     private Timestamp createdAt;
 
@@ -79,7 +85,7 @@ public class Card implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return new HashSet<>();
+        return Collections.singleton(this.role);
     }
 
     @Override
