@@ -45,14 +45,14 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .csrf().disable()
                 .httpBasic().disable()
                 .authorizeRequests()
-                .antMatchers("/auth/register", "/auth/login", "/auth/verifyEmail",
-                        "/api/card",
-                        "/api/card/add",
-                        "/api/bankomat",
-                        "/api/bankomat/add",
+                .antMatchers("/auth/register", "/auth/login", "/auth/verifyEmail"
+//                        "/api/card",
+//                        "/api/card/add",
+//                        "/api/bankomat",
+//                        "/api/bankomat/add",
 //                        "/api/bankomat/withdraw",
-                        "/api/bankomat/replenishCard",
-                        "/api/report/*"
+//                        "/api/bankomat/replenishCard",
+//                        "/api/report/*"
                 ).permitAll()
                 .anyRequest().authenticated();
 

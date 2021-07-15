@@ -4,13 +4,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import uz.mk.atmservice.entity.AccountHistory;
 import uz.mk.atmservice.entity.AccountType;
-import uz.mk.atmservice.entity.Role;
 import uz.mk.atmservice.entity.enums.AccountTypeName;
 import uz.mk.atmservice.entity.enums.RoleName;
 import uz.mk.atmservice.payload.ApiResponse;
 import uz.mk.atmservice.repository.AccountHistoryRepository;
 import uz.mk.atmservice.repository.AccountTypeRepository;
-import uz.mk.atmservice.utils.CommonUtils;
 
 import java.sql.Timestamp;
 import java.text.SimpleDateFormat;
@@ -27,27 +25,17 @@ public class AccountHistoryService {
     AccountTypeRepository accountTypeRepository;
 
     public ApiResponse getAllAccountHistory(Integer bankomatId) {
-        Map<String, Object> securityContextHolder = CommonUtils.getPrincipalAndRoleFromSecurityContextHolder();
-        Set<Role> principalUserRoles = (Set<Role>) securityContextHolder.get("principalUserRoles");
-        boolean existsDirectorAuthority = CommonUtils.isExistsAuthority(principalUserRoles, RoleName.ROLE_DIRECTOR);
-
-        if (!existsDirectorAuthority){
+        if (checkAuthority(RoleName.ROLE_DIRECTOR)) {
             return new ApiResponse("You don't have the authority", false);
         }
-
         List<AccountHistory> accountHistories = accountHistoryRepository.findAllByBankomatId(bankomatId);
         return new ApiResponse("Account Histories", true, accountHistories);
     }
 
-    public ApiResponse getDailyIncomesOrExpenses(Integer bankomatId, String dateText,AccountTypeName accountTypeName) {
-        Map<String, Object> securityContextHolder = CommonUtils.getPrincipalAndRoleFromSecurityContextHolder();
-        Set<Role> principalUserRoles = (Set<Role>) securityContextHolder.get("principalUserRoles");
-        boolean existsDirectorAuthority = CommonUtils.isExistsAuthority(principalUserRoles, RoleName.ROLE_DIRECTOR);
-
-        if (!existsDirectorAuthority){
+    public ApiResponse getDailyIncomesOrExpenses(Integer bankomatId, String dateText, AccountTypeName accountTypeName) {
+        if (checkAuthority(RoleName.ROLE_DIRECTOR)) {
             return new ApiResponse("You don't have the authority", false);
         }
-
         Date date;
         try {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
@@ -72,11 +60,6 @@ public class AccountHistoryService {
                 .findAllByBankomatIdAndAccountTypeIdAndDateBetween(bankomatId, accountType.getId(), minDate, maxDate);
         return new ApiResponse("Account Histories", true, accountHistories);
     }
-
-
-
-
-
 
 
 }

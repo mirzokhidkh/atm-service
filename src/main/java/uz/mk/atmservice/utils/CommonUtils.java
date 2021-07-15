@@ -10,6 +10,17 @@ import java.util.*;
 
 public class CommonUtils {
 
+    public static boolean checkAuthority(RoleName roleName) {
+        Map<String, Object> securityContextHolder = getPrincipalAndRoleFromSecurityContextHolder();
+        Set<Role> principalUserRoles = (Set<Role>) securityContextHolder.get("principalUserRoles");
+        boolean existsDirectorAuthority = CommonUtils.isExistsAuthority(principalUserRoles, roleName);
+
+        if (!existsDirectorAuthority) {
+            return true;
+        }
+        return false;
+    }
+
     public static Map<String, Object> getPrincipalAndRoleFromSecurityContextHolder() {
         Map<String, Object> map = new HashMap<String, Object>();
 
@@ -33,7 +44,7 @@ public class CommonUtils {
 
 
     public static AccountHistory createAccountHistory(
-            Banknote banknote, int amount, Card card, AccountType accountType, Bankomat bankomat,Double commissionPercentage) {
+            Banknote banknote, int amount, Card card, AccountType accountType, Bankomat bankomat, Double commissionPercentage) {
         AccountHistory accountHistory = new AccountHistory();
         accountHistory.setBanknote(banknote);
         accountHistory.setAmount(amount);
