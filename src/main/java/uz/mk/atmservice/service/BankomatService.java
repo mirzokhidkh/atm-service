@@ -11,10 +11,8 @@ import uz.mk.atmservice.payload.BankomatDto;
 import uz.mk.atmservice.payload.ClientMoneyDto;
 import uz.mk.atmservice.payload.MoneyDto;
 import uz.mk.atmservice.repository.*;
-import uz.mk.atmservice.utils.CommonUtils;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static uz.mk.atmservice.utils.CommonUtils.*;
@@ -132,7 +130,7 @@ public class BankomatService {
     }
 
 
-    //WITHDRAW MONEY FROM BANKOMAT
+    //WITHDRAW MONEY FROM BANKOMAT FOR CLIENT
     @Transactional
     public ApiResponse withdraw(ClientMoneyDto clientMoneyDto) {
         Card card = (Card) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -147,31 +145,42 @@ public class BankomatService {
             return new ApiResponse("There is not enough money from card to withdraw", false);
         }
 
-//        List<Banknote> banknotes = bankomat.getBanknotes();
         Set<BankomatSet> bankomatSets = bankomat.getBankomatSet();
 
-//        List<Banknote> banknoteList = banknotes.stream()
+        /**
+         SUMMA WHICH IS REQUESTED BY THE CLIENT MUST BE DIVIDED WITHOUT RESIDUE AT LEAST ONE OF THE BANKNOTES CURRENTLY AVAILABLE AT THE ATM
+         **/
         List<BankomatSet> bankomatSetList = bankomatSets.stream()
                 .filter(bankomatSet ->
                         summa % bankomatSet.getBanknote().getValue() == 0 && bankomatSet.getBanknote().getCurrency().getId().equals(card.getCurrency().getId()))
                 .collect(Collectors.toList());
+
         Banknote banknote = null;
         double amount;
         Integer value;
+
+        /**
+         ATM banknotes should be sort by their values in ascending order
+         **/
+        List<BankomatSet> collect = bankomatSetList
+                .stream()
+                .sorted(Comparator.comparing(bankomatSet -> bankomatSet.getBanknote().getValue())).collect(Collectors.toList());
+
         if (bankomatSetList.size() > 0) {
-            OptionalInt optMaxValue = bankomatSetList.stream().mapToInt(v -> v.getBanknote().getValue()).max();
+            //to get max value from current banknotes
+            OptionalInt optMaxValue = collect.stream().mapToInt(v -> v.getBanknote().getValue()).max();
             Integer maxValue = optMaxValue.getAsInt();
             Integer finalMaxValue1 = maxValue;
+            //to get object which has max value
             BankomatSet maxBankomatSet = bankomatSetList.stream()
-                    .filter(bankomatSet -> bankomatSet.getBanknote().getValue().equals(finalMaxValue1)).findAny().orElse(null);
-
+                    .filter(bankomatSet -> bankomatSet.getBanknote().getValue().equals(finalMaxValue1)).findFirst().orElse(null);
             final BankomatSet bankomatSet[] = {null};
-//            int allBankomatSet = bankomatSetRepository.findAllByBankomatId(bankomat.getId())
-//                    .stream().mapToInt(value -> (value.getAmount() * value.getBanknote().getValue())).sum();
+            int i = collect.size() - 1;
 
-            while (maxBankomatSet.getSumma() - summaWithCommission < 0  ) {
+            //if balance of the ATM is less than summa , max value will be  value of previous item of current item that has max value and so on
+            while (maxBankomatSet.getSumma() - summa < 0 && i-- >= 0) {
                 Integer finalMaxValue = maxValue;
-                bankomatSetList.forEach(curBankomatSet -> {
+                collect.stream().forEach(curBankomatSet -> {
                     if (!(curBankomatSet.getBanknote().getValue() >= finalMaxValue)) {
                         bankomatSet[0] = curBankomatSet;
                     }
@@ -179,12 +188,14 @@ public class BankomatService {
                 maxBankomatSet = bankomatSet[0];
                 maxValue = maxBankomatSet.getBanknote().getValue();
             }
+            if (i < 0) {
+                return new ApiResponse("There is not enough money in the ATM to withdraw", false);
+            }
             banknote = banknoteRepository.findByValue(maxValue);
             value = banknote.getValue();
             amount = summa / value;
             maxBankomatSet.setAmount(maxBankomatSet.getAmount() - (int) amount);
             bankomatSetRepository.save(maxBankomatSet);
-
         } else {
             return new ApiResponse("Please enter other summa", false);
         }
@@ -220,19 +231,28 @@ public class BankomatService {
         Card card = (Card) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         Bankomat bankomat = bankomatRepository.findById(moneyDto.getBankomatId()).get();
-        Banknote banknote = banknoteRepository.getById(moneyDto.getBanknoteId());
+        Banknote banknote = banknoteRepository.findById(moneyDto.getBanknoteId()).get();
+        Set<BankomatSet> bankomatSet = bankomat.getBankomatSet();
+        List<BankomatSet> collect = bankomatSet
+                .stream()
+                .sorted(Comparator.comparing(curBankomatSet -> curBankomatSet.getBanknote().getValue())).collect(Collectors.toList());
         List<Banknote> banknotes = bankomat.getBanknotes();
         boolean anyMatch = banknotes.stream().anyMatch(banknote1 -> banknote1.getId().equals(banknote.getId()));
         if (!anyMatch) {
             return new ApiResponse("Money with such a banknote doesn't exists now", false);
         }
-        Double commissionToReplenish = bankomat.getCommissionSet().getCommissionToReplenish();
         Integer amount = moneyDto.getAmount();
+        BankomatSet curBankomatSet = collect.stream()
+                .filter(bankomatSet1 -> bankomatSet1.getBanknote().getId().equals(banknote.getId())).findFirst().orElse(null);
+        assert curBankomatSet != null;
+        curBankomatSet.setAmount(curBankomatSet.getAmount() + amount);
+        bankomatSetRepository.save(curBankomatSet);
+
+        Double commissionToReplenish = bankomat.getCommissionSet().getCommissionToReplenish();
         int summaWithCommission = banknote.getValue() * amount;
         double summaWithoutCommission = (summaWithCommission * 100) / (100 + commissionToReplenish);
         double newSumma = card.getBalance() + summaWithoutCommission;
         card.setBalance(newSumma);
-        bankomat.setBalance(bankomat.getBalance() + summaWithCommission);
 
         boolean anyMatch1 = banknotes.stream()
                 .anyMatch(aBanknote ->
@@ -247,7 +267,6 @@ public class BankomatService {
         AccountHistory accountHistory =
                 createAccountHistory(banknote, amount, card, accountType, bankomat, commissionToReplenish);
         AccountHistory savedAccountHistory = accountHistoryRepository.save(accountHistory);
-        bankomatRepository.save(bankomat);
         cardRepository.save(card);
 
         return new ApiResponse("The money fell on the card", true, savedAccountHistory);
