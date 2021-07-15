@@ -5,9 +5,12 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import uz.mk.atmservice.entity.Card;
+import uz.mk.atmservice.entity.enums.RoleName;
 import uz.mk.atmservice.payload.ApiResponse;
 import uz.mk.atmservice.payload.CardDto;
 import uz.mk.atmservice.repository.*;
+
+import static uz.mk.atmservice.utils.CommonUtils.checkAuthority;
 
 @Service
 public class CardService {
@@ -32,6 +35,10 @@ public class CardService {
     PasswordEncoder passwordEncoder;
 
     public ApiResponse addCard(CardDto cardDto) {
+        if (checkAuthority(RoleName.ROLE_STAFF)) {
+            return new ApiResponse("You don't have the authority", false);
+        }
+
         boolean existsByNumber = cardRepository.existsByNumber(cardDto.getNumber());
         if (existsByNumber) {
             return new ApiResponse("card with such a number already exists", false);
