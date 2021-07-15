@@ -51,7 +51,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                         "/api/bankomat",
                         "/api/bankomat/add",
 //                        "/api/bankomat/withdraw",
-                        "/api/bankomat/replenishCard"
+                        "/api/bankomat/replenishCard",
+                        "/api/report/*"
                 ).permitAll()
                 .anyRequest().authenticated();
 

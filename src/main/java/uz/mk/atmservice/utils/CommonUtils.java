@@ -6,10 +6,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import uz.mk.atmservice.entity.*;
 import uz.mk.atmservice.entity.enums.RoleName;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 
 public class CommonUtils {
 
@@ -45,6 +42,32 @@ public class CommonUtils {
         accountHistory.setBankomat(bankomat);
         accountHistory.setCommissionPercentage(commissionPercentage);
         return accountHistory;
+    }
+
+    public static Calendar getCalendarForNow() {
+        Calendar calendar = GregorianCalendar.getInstance();
+        calendar.setTime(new Date());
+        return calendar;
+    }
+
+    public static Calendar getCalendarForDate(Date date) {
+        Calendar calendar = GregorianCalendar.getInstance();
+        calendar.setTime(date);
+        return calendar;
+    }
+
+    public static void setTimeToBeginningOfDay(Calendar calendar) {
+        calendar.set(Calendar.HOUR_OF_DAY, 0);
+        calendar.set(Calendar.MINUTE, 0);
+        calendar.set(Calendar.SECOND, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+    }
+
+    public static void setTimeToEndOfDay(Calendar calendar) {
+        calendar.set(Calendar.HOUR_OF_DAY, 23);
+        calendar.set(Calendar.MINUTE, 59);
+        calendar.set(Calendar.SECOND, 59);
+        calendar.set(Calendar.MILLISECOND, 999);
     }
 
     public static Integer generateCode() {

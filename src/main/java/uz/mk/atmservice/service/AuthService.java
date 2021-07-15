@@ -124,11 +124,6 @@ public class AuthService implements UserDetailsService {
     }
 
     public UserDetails loadCardByCardNumber(String number) {
-        Optional<Card> optionalCard = cardRepository.findByNumber(number);
-        if (optionalCard.isPresent()) {
-            return optionalCard.get();
-        }
-        throw new UsernameNotFoundException(number + " not found");
-//        return cardRepository.findByNumber(number).orElseThrow(() -> new UsernameNotFoundException(number + " not found"));
+        return cardRepository.findByNumber(number).orElseThrow(() -> new UsernameNotFoundException(number + " not found"));
     }
 }
