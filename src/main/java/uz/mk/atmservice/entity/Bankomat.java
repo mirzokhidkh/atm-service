@@ -1,9 +1,7 @@
 package uz.mk.atmservice.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 import org.springframework.data.annotation.CreatedBy;
@@ -12,9 +10,11 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.*;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
-@Data
+@Getter
+@Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
@@ -28,6 +28,7 @@ public class Bankomat {
 
     private Double minMoney;
 
+    @Transient
     private Double balance = 0.0;
 
     @ManyToOne(cascade = CascadeType.ALL)
@@ -41,16 +42,28 @@ public class Bankomat {
     private Bank bank;
 
     @ManyToMany
-    private List<CardType> cardTypes;
+    private List<Banknote> banknotes;
 
     @ManyToMany
-    private List<Banknote> banknotes;
+    private List<CardType> cardTypes;
+
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "bankomat", cascade = CascadeType.ALL)
+    private Set<BankomatSet> bankomatSet;
 
     @CreatedBy
     private UUID createdBy;
 
     @LastModifiedBy
     private UUID updatedBy;
+
+
+    public Double getBalance() {
+        int sum = bankomatSet.stream().mapToInt(value -> (value.getAmount() * value.getBanknote().getValue())).sum();
+        balance = Double.valueOf(sum);
+        return balance;
+    }
 
 
 }

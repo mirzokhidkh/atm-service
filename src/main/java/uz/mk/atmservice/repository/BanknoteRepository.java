@@ -10,4 +10,5 @@ import java.util.List;
 @Repository
 public interface BanknoteRepository extends JpaRepository<Banknote, Integer> {
     List<Banknote> findAllByIdIn(Collection<Integer> id);
+    Banknote findByValue(Integer value);
 }

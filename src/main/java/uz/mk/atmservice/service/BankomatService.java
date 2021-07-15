@@ -17,10 +17,15 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+import static uz.mk.atmservice.utils.CommonUtils.*;
+
 @Service
 public class BankomatService {
     @Autowired
     BankomatRepository bankomatRepository;
+
+    @Autowired
+    BankomatSetRepository bankomatSetRepository;
 
     @Autowired
     CommissionSetRepository commissionSetRepository;
@@ -54,9 +59,9 @@ public class BankomatService {
 
     //ADD NEW BANKOMAT TO DB
     public ApiResponse add(BankomatDto bankomatDto) {
-        Map<String, Object> securityContextHolder = CommonUtils.getPrincipalAndRoleFromSecurityContextHolder();
+        Map<String, Object> securityContextHolder = getPrincipalAndRoleFromSecurityContextHolder();
         Set<Role> principalUserRoles = (Set<Role>) securityContextHolder.get("principalUserRoles");
-        boolean existsStaffAuthority = CommonUtils.isExistsAuthority(principalUserRoles, RoleName.ROLE_ATM_STAFF);
+        boolean existsStaffAuthority = isExistsAuthority(principalUserRoles, RoleName.ROLE_ATM_STAFF);
 
         if (!existsStaffAuthority) {
             return new ApiResponse("You don't have the authority", false);
@@ -86,12 +91,12 @@ public class BankomatService {
     }
 
 
-    //REPLENISH MONEY TO BALANCE OF BANKOMAT
+    //REPLENISH MONEY TO BALANCE OF BANKOMAT  FOR ATM_STAFF
     public ApiResponse fill(MoneyDto moneyDto) {
-        Map<String, Object> securityContextHolder = CommonUtils.getPrincipalAndRoleFromSecurityContextHolder();
+        Map<String, Object> securityContextHolder = getPrincipalAndRoleFromSecurityContextHolder();
         User principalUser = (User) securityContextHolder.get("principalUser");
         Set<Role> principalUserRoles = (Set<Role>) securityContextHolder.get("principalUserRoles");
-        boolean existsStaffAuthority = CommonUtils.isExistsAuthority(principalUserRoles, RoleName.ROLE_ATM_STAFF);
+        boolean existsStaffAuthority = isExistsAuthority(principalUserRoles, RoleName.ROLE_ATM_STAFF);
 
         if (!existsStaffAuthority) {
             return new ApiResponse("You don't have the authority", false);
@@ -100,6 +105,19 @@ public class BankomatService {
         Integer amount = moneyDto.getAmount();
         Banknote banknote = banknoteRepository.findById(moneyDto.getBanknoteId()).get();
         Bankomat bankomat = bankomatRepository.findById(moneyDto.getBankomatId()).get();
+        Optional<BankomatSet> optionalBankomatSet = bankomatSetRepository.findByBanknoteId(moneyDto.getBanknoteId());
+
+        if (optionalBankomatSet.isPresent()) {
+            BankomatSet existingBankomatSet = optionalBankomatSet.get();
+            existingBankomatSet.setAmount(existingBankomatSet.getAmount() + amount);
+            bankomatSetRepository.save(existingBankomatSet);
+        } else {
+            BankomatSet bankomatSet = new BankomatSet();
+            bankomatSet.setBanknote(banknote);
+            bankomatSet.setAmount(amount);
+            bankomatSet.setBankomat(bankomat);
+            bankomatSetRepository.save(bankomatSet);
+        }
 
         ReplenishAtmHistory replenishAtmHistory = new ReplenishAtmHistory();
         replenishAtmHistory.setBanknote(banknote);
@@ -108,16 +126,7 @@ public class BankomatService {
         replenishAtmHistory.setStaff(principalUser);
         ReplenishAtmHistory savedHistory = replenishAtmHistoryRepository.save(replenishAtmHistory);
 
-        List<Banknote> oldBanknotes = bankomat.getBanknotes();
-        boolean anyMatch = oldBanknotes.stream().anyMatch(banknote1 -> banknote1.equals(banknote));
-
-        if (!anyMatch) {
-            oldBanknotes.add(banknote);
-            bankomat.setBanknotes(oldBanknotes);
-        }
-
-        bankomat.setBalance(bankomat.getBalance() + savedHistory.getSumma());
-        bankomatRepository.save(bankomat);
+//        bankomatRepository.save(bankomat);
 
         return new ApiResponse("Replenishing ATM history saved", true, savedHistory);
     }
@@ -126,7 +135,7 @@ public class BankomatService {
     //WITHDRAW MONEY FROM BANKOMAT
     @Transactional
     public ApiResponse withdraw(ClientMoneyDto clientMoneyDto) {
-        Card card =(Card) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Card card = (Card) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         Bankomat bankomat = bankomatRepository.findById(clientMoneyDto.getBankomatId()).get();
         Double commissionToWithdraw = bankomat.getCommissionSet().getCommissionToWithdraw();
@@ -138,19 +147,51 @@ public class BankomatService {
             return new ApiResponse("There is not enough money from card to withdraw", false);
         }
 
-        List<Banknote> banknotes = bankomat.getBanknotes();
-        List<Banknote> banknoteList = banknotes.stream()
-                .filter(banknote ->
-                        summa % banknote.getValue() == 0 && banknote.getCurrency().getId().equals(card.getCurrency().getId()))
+//        List<Banknote> banknotes = bankomat.getBanknotes();
+        Set<BankomatSet> bankomatSets = bankomat.getBankomatSet();
+
+//        List<Banknote> banknoteList = banknotes.stream()
+        List<BankomatSet> bankomatSetList = bankomatSets.stream()
+                .filter(bankomatSet ->
+                        summa % bankomatSet.getBanknote().getValue() == 0 && bankomatSet.getBanknote().getCurrency().getId().equals(card.getCurrency().getId()))
                 .collect(Collectors.toList());
         Banknote banknote = null;
-        if (banknoteList.size() > 0) {
-            banknote = banknoteList.get(banknoteList.size() - 1);
+        double amount;
+        Integer value;
+        if (bankomatSetList.size() > 0) {
+            OptionalInt optMaxValue = bankomatSetList.stream().mapToInt(v -> v.getBanknote().getValue()).max();
+            Integer maxValue = optMaxValue.getAsInt();
+            Integer finalMaxValue1 = maxValue;
+            BankomatSet maxBankomatSet = bankomatSetList.stream()
+                    .filter(bankomatSet -> bankomatSet.getBanknote().getValue().equals(finalMaxValue1)).findAny().orElse(null);
+
+            final BankomatSet bankomatSet[] = {null};
+//            int allBankomatSet = bankomatSetRepository.findAllByBankomatId(bankomat.getId())
+//                    .stream().mapToInt(value -> (value.getAmount() * value.getBanknote().getValue())).sum();
+
+            while (maxBankomatSet.getSumma() - summaWithCommission < 0  ) {
+                Integer finalMaxValue = maxValue;
+                bankomatSetList.forEach(curBankomatSet -> {
+                    if (!(curBankomatSet.getBanknote().getValue() >= finalMaxValue)) {
+                        bankomatSet[0] = curBankomatSet;
+                    }
+                });
+                maxBankomatSet = bankomatSet[0];
+                maxValue = maxBankomatSet.getBanknote().getValue();
+            }
+            banknote = banknoteRepository.findByValue(maxValue);
+            value = banknote.getValue();
+            amount = summa / value;
+            maxBankomatSet.setAmount(maxBankomatSet.getAmount() - (int) amount);
+            bankomatSetRepository.save(maxBankomatSet);
+
         } else {
             return new ApiResponse("Please enter other summa", false);
         }
+
         card.setBalance(newSumma);
-        bankomat.setBalance(bankomat.getBalance() - summa);
+
+        ///WARN  STAFF OF BANKOMAT IF BALANCE IS LESS THAN MINIMAL SUMMA
         if (bankomat.getBalance() - bankomat.getMinMoney() <= 0) {
             List<User> bankomatStaff = bankomat.getBank().getStaff().stream().filter(user -> {
                 List<Role> roles = user.getRoles()
@@ -163,12 +204,8 @@ public class BankomatService {
 
         AccountType accountType = accountTypeRepository.findById(clientMoneyDto.getAccountTypeId()).get();
 
-
-        Integer value = banknote.getValue();
-        double amount = summa / value;
-
-        AccountHistory accountHistory = CommonUtils.createAccountHistory(banknote, (int) amount, card,
-                accountType, bankomat, commissionToWithdraw);
+        AccountHistory accountHistory =
+                createAccountHistory(banknote, (int) amount, card, accountType, bankomat, commissionToWithdraw);
         AccountHistory savedAccountHistory = accountHistoryRepository.save(accountHistory);
 
         cardRepository.save(card);
@@ -177,10 +214,10 @@ public class BankomatService {
     }
 
 
-    //REPLENISH MONEY CARD
+    //REPLENISH MONEY CARD FOR CLIENT
     @Transactional
     public ApiResponse replenishCard(MoneyDto moneyDto) {
-        Card card =(Card) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Card card = (Card) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
         Bankomat bankomat = bankomatRepository.findById(moneyDto.getBankomatId()).get();
         Banknote banknote = banknoteRepository.getById(moneyDto.getBanknoteId());
@@ -207,8 +244,8 @@ public class BankomatService {
 
         AccountType accountType = accountTypeRepository.findById(moneyDto.getAccountTypeId()).get();
 
-        AccountHistory accountHistory = CommonUtils.createAccountHistory(banknote, amount, card,
-                accountType, bankomat, commissionToReplenish);
+        AccountHistory accountHistory =
+                createAccountHistory(banknote, amount, card, accountType, bankomat, commissionToReplenish);
         AccountHistory savedAccountHistory = accountHistoryRepository.save(accountHistory);
         bankomatRepository.save(bankomat);
         cardRepository.save(card);

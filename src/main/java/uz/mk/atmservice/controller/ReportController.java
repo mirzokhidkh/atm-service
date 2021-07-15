@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 import uz.mk.atmservice.entity.enums.AccountTypeName;
 import uz.mk.atmservice.payload.ApiResponse;
 import uz.mk.atmservice.service.AccountHistoryService;
+import uz.mk.atmservice.service.BankomatSetService;
 import uz.mk.atmservice.service.ReplenishAtmHistoryService;
 
 @RestController
@@ -21,6 +22,9 @@ public class ReportController {
 
     @Autowired
     ReplenishAtmHistoryService replenishAtmHistoryService;
+
+    @Autowired
+    BankomatSetService bankomatSetService;
 
     @GetMapping("/all")
     public HttpEntity<?> getAllAccountHistory(@RequestParam Integer bankomatId) {
@@ -45,5 +49,9 @@ public class ReportController {
         return ResponseEntity.status(response.isSuccess() ? 200 : 409).body(response);
     }
 
-
+    @GetMapping("/banknotesInfoByBanknoteId")
+    public HttpEntity<?> getAllBanknoteInfoByBankomatId(@RequestParam Integer bankomatId) {
+        ApiResponse response = bankomatSetService.getAllBanknoteInfoByBankomatId(bankomatId);
+        return ResponseEntity.status(response.isSuccess() ? 200 : 409).body(response);
+    }
 }

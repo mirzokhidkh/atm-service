@@ -56,6 +56,11 @@ public class AuthService implements UserDetailsService {
 
     public ApiResponse register(RegisterDto registerDto) {
 
+        boolean existsByEmail = userRepository.existsByEmail(registerDto.getEmail());
+        if (existsByEmail) {
+            return new ApiResponse("Email already exists", false);
+        }
+
         Map<String, Object> securityContextHolder = CommonUtils.getPrincipalAndRoleFromSecurityContextHolder();
         Set<Role> principalUserRoles = (Set<Role>) securityContextHolder.get("principalUserRoles");
         Role role = roleRepository.findById(registerDto.getRoleId()).get();
