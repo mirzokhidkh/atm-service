@@ -1,6 +1,7 @@
 package uz.mk.atmservice.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import uz.mk.atmservice.entity.*;
@@ -13,6 +14,7 @@ import uz.mk.atmservice.repository.*;
 import uz.mk.atmservice.utils.CommonUtils;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @Service
@@ -47,11 +49,14 @@ public class BankomatService {
     @Autowired
     AccountTypeRepository accountTypeRepository;
 
+    @Autowired
+    MailService mailService;
+
     //ADD NEW BANKOMAT TO DB
     public ApiResponse add(BankomatDto bankomatDto) {
         Map<String, Object> securityContextHolder = CommonUtils.getPrincipalAndRoleFromSecurityContextHolder();
         Set<Role> principalUserRoles = (Set<Role>) securityContextHolder.get("principalUserRoles");
-        boolean existsStaffAuthority = CommonUtils.isExistsAuthority(principalUserRoles, RoleName.ROLE_STAFF);
+        boolean existsStaffAuthority = CommonUtils.isExistsAuthority(principalUserRoles, RoleName.ROLE_ATM_STAFF);
 
         if (!existsStaffAuthority) {
             return new ApiResponse("You don't have the authority", false);
@@ -86,7 +91,7 @@ public class BankomatService {
         Map<String, Object> securityContextHolder = CommonUtils.getPrincipalAndRoleFromSecurityContextHolder();
         User principalUser = (User) securityContextHolder.get("principalUser");
         Set<Role> principalUserRoles = (Set<Role>) securityContextHolder.get("principalUserRoles");
-        boolean existsStaffAuthority = CommonUtils.isExistsAuthority(principalUserRoles, RoleName.ROLE_STAFF);
+        boolean existsStaffAuthority = CommonUtils.isExistsAuthority(principalUserRoles, RoleName.ROLE_ATM_STAFF);
 
         if (!existsStaffAuthority) {
             return new ApiResponse("You don't have the authority", false);
@@ -120,8 +125,9 @@ public class BankomatService {
 
     //WITHDRAW MONEY FROM BANKOMAT
     @Transactional
-    public ApiResponse withdraw(ClientMoneyDto clientMoneyDto, UUID cardId) {
-        Card card = cardRepository.findById(cardId).get();
+    public ApiResponse withdraw(ClientMoneyDto clientMoneyDto) {
+        Card card =(Card) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
         Bankomat bankomat = bankomatRepository.findById(clientMoneyDto.getBankomatId()).get();
         Double commissionToWithdraw = bankomat.getCommissionSet().getCommissionToWithdraw();
 
@@ -144,6 +150,16 @@ public class BankomatService {
             return new ApiResponse("Please enter other summa", false);
         }
         card.setBalance(newSumma);
+        bankomat.setBalance(bankomat.getBalance() - summa);
+        if (bankomat.getBalance() - bankomat.getMinMoney() <= 0) {
+            List<User> bankomatStaff = bankomat.getBank().getStaff().stream().filter(user -> {
+                List<Role> roles = user.getRoles()
+                        .stream().filter(role -> role.getName().equals(RoleName.ROLE_ATM_STAFF)).collect(Collectors.toList());
+                return roles.size() != 0;
+            }).collect(Collectors.toList());
+            String text = "Balance at the ATM was less than the minimum amount. Don't remember to fill balance !";
+            mailService.sendEmail(bankomatStaff.get(0).getEmail(), "WARNING", text);
+        }
 
         AccountType accountType = accountTypeRepository.findById(clientMoneyDto.getAccountTypeId()).get();
 
@@ -163,8 +179,9 @@ public class BankomatService {
 
     //REPLENISH MONEY CARD
     @Transactional
-    public ApiResponse replenishCard(MoneyDto moneyDto, UUID cardId) {
-        Card card = cardRepository.findById(cardId).get();
+    public ApiResponse replenishCard(MoneyDto moneyDto) {
+        Card card =(Card) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
         Bankomat bankomat = bankomatRepository.findById(moneyDto.getBankomatId()).get();
         Banknote banknote = banknoteRepository.getById(moneyDto.getBanknoteId());
         List<Banknote> banknotes = bankomat.getBanknotes();

@@ -28,6 +28,8 @@ public class CardDto {
 
     private Integer bankId;
 
+    private Integer currencyId;
+
     private boolean status;
 
     private Integer roleId;

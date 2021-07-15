@@ -26,4 +26,11 @@ public class Bank {
             orphanRemoval = true,
             cascade = CascadeType.ALL)
     private List<Bankomat> bankomatList = new ArrayList<>();
+
+    @JsonIgnore
+    @OneToMany(
+            mappedBy = "bank",
+            orphanRemoval = true,
+            cascade = CascadeType.ALL)
+    private List<User> staff = new ArrayList<>();
 }

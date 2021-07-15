@@ -11,6 +11,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import uz.mk.atmservice.entity.Card;
 import uz.mk.atmservice.entity.Role;
 import uz.mk.atmservice.entity.User;
 import uz.mk.atmservice.entity.enums.RoleName;
@@ -123,6 +124,11 @@ public class AuthService implements UserDetailsService {
     }
 
     public UserDetails loadCardByCardNumber(String number) {
-        return cardRepository.findByNumber(number).orElseThrow(() -> new UsernameNotFoundException(number + " not found"));
+        Optional<Card> optionalCard = cardRepository.findByNumber(number);
+        if (optionalCard.isPresent()) {
+            return optionalCard.get();
+        }
+        throw new UsernameNotFoundException(number + " not found");
+//        return cardRepository.findByNumber(number).orElseThrow(() -> new UsernameNotFoundException(number + " not found"));
     }
 }

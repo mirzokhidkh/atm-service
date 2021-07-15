@@ -1,6 +1,8 @@
 package uz.mk.atmservice.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import uz.mk.atmservice.entity.Card;
 import uz.mk.atmservice.payload.ApiResponse;
@@ -23,6 +25,12 @@ public class CardService {
     @Autowired
     RoleRepository roleRepository;
 
+    @Autowired
+    CurrencyRepository currencyRepository;
+
+    @Autowired
+    PasswordEncoder passwordEncoder;
+
     public ApiResponse addCard(CardDto cardDto) {
         boolean existsByNumber = cardRepository.existsByNumber(cardDto.getNumber());
         if (existsByNumber) {
@@ -34,9 +42,10 @@ public class CardService {
         card.setCvvCode(cardDto.getCvvCode());
         card.setFullName(cardDto.getFullName());
         card.setValidityPeriod(cardDto.getValidityPeriod());
-        card.setCode(cardDto.getCode());
+        card.setCode(passwordEncoder.encode(cardDto.getCode()));
         card.setCardType(cardTypeRepository.findById(cardDto.getCardTypeId()).get());
         card.setBank(bankRepository.findById(cardDto.getBankId()).get());
+        card.setCurrency(currencyRepository.findById(cardDto.getCurrencyId()).get());
         card.setStatus(cardDto.isStatus());
         card.setRole(roleRepository.findById(cardDto.getRoleId()).get());
 
@@ -45,4 +54,5 @@ public class CardService {
         return new ApiResponse("Card saved", true, savedCard);
 
     }
+
 }

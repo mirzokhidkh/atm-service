@@ -34,14 +34,14 @@ public class BankomatController {
     }
 
     @PostMapping("/bankomat/withdraw")
-    public HttpEntity<?> withdraw(@RequestBody ClientMoneyDto clientMoneyDto, @RequestParam String cardId) {
-        ApiResponse response = bankomatService.withdraw(clientMoneyDto, UUID.fromString(cardId));
+    public HttpEntity<?> withdraw(@RequestBody ClientMoneyDto clientMoneyDto) {
+        ApiResponse response = bankomatService.withdraw(clientMoneyDto);
         return ResponseEntity.status(response.isSuccess() ? 200 : 403).body(response);
     }
 
     @PostMapping("/bankomat/replenishCard")
-    public HttpEntity<?> replenishCard(@RequestBody MoneyDto moneyDto, @RequestParam String cardId) {
-        ApiResponse response = bankomatService.replenishCard(moneyDto, UUID.fromString(cardId));
+    public HttpEntity<?> replenishCard(@RequestBody MoneyDto moneyDto) {
+        ApiResponse response = bankomatService.replenishCard(moneyDto);
         return ResponseEntity.status(response.isSuccess() ? 200 : 403).body(response);
     }
 

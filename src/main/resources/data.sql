@@ -3,6 +3,7 @@ values ('ROLE_DIRECTOR'),
        ('ROLE_STAFF'),
        ('ROLE_CLIENT'),
        ('ROLE_CARD');
+       ('ROLE_ATM_STAFF');
 
 insert into account_type(name)
 values ('INCOME'),
