@@ -6,42 +6,39 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 import uz.mk.atmservice.payload.ApiResponse;
 import uz.mk.atmservice.payload.BankomatDto;
 import uz.mk.atmservice.payload.ClientMoneyDto;
 import uz.mk.atmservice.payload.MoneyDto;
-import uz.mk.atmservice.service.BankomatService;
-
-import java.util.UUID;
+import uz.mk.atmservice.service.BankomatServiceImpl;
 
 @RepositoryRestController
 @RequiredArgsConstructor
 public class BankomatController {
 
-    private final BankomatService bankomatService;
+    private final BankomatServiceImpl bankomatServiceImpl;
 
     @PostMapping("/bankomat/add")
     public HttpEntity<?> add(@RequestBody BankomatDto bankomatDto) {
-        ApiResponse response = bankomatService.add(bankomatDto);
+        ApiResponse response = bankomatServiceImpl.add(bankomatDto);
         return ResponseEntity.status(response.isSuccess() ? 201 : 403).body(response);
     }
 
     @PostMapping("/bankomat/fill")
     public HttpEntity<?> fill(@RequestBody MoneyDto moneyDto) {
-        ApiResponse response = bankomatService.fill(moneyDto);
+        ApiResponse response = bankomatServiceImpl.fill(moneyDto);
         return ResponseEntity.status(response.isSuccess() ? 202 : 403).body(response);
     }
 
     @PostMapping("/bankomat/withdraw")
     public HttpEntity<?> withdraw(@RequestBody ClientMoneyDto clientMoneyDto) {
-        ApiResponse response = bankomatService.withdraw(clientMoneyDto);
+        ApiResponse response = bankomatServiceImpl.withdraw(clientMoneyDto);
         return ResponseEntity.status(response.isSuccess() ? 200 : 403).body(response);
     }
 
     @PostMapping("/bankomat/replenishCard")
     public HttpEntity<?> replenishCard(@RequestBody MoneyDto moneyDto) {
-        ApiResponse response = bankomatService.replenishCard(moneyDto);
+        ApiResponse response = bankomatServiceImpl.replenishCard(moneyDto);
         return ResponseEntity.status(response.isSuccess() ? 200 : 403).body(response);
     }
 
