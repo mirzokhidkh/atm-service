@@ -45,7 +45,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .csrf().disable()
                 .httpBasic().disable()
                 .authorizeRequests()
-                .antMatchers("/auth/register", "/auth/login", "/auth/verifyEmail"
+                .antMatchers(
+//                        "/auth/register",
+                        "/auth/login",
+                        "/auth/verifyEmail"
 //                        "/api/card",
 //                        "/api/card/add",
 //                        "/api/bankomat",
