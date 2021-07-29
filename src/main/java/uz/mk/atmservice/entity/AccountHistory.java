@@ -2,23 +2,22 @@ package uz.mk.atmservice.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import uz.mk.atmservice.entity.enums.AccountTypeName;
+import uz.mk.atmservice.entity.template.AbsUUIDEntity;
 
 import javax.persistence.*;
 import java.sql.Timestamp;
 import java.util.UUID;
 
+@EqualsAndHashCode(callSuper = true)
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-public class AccountHistory {
-    @Id
-    @GeneratedValue
-    private UUID id;
-
+public class AccountHistory extends AbsUUIDEntity {
     @ManyToOne
     private Banknote banknote;
 

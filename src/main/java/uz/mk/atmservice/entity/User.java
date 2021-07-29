@@ -6,6 +6,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import uz.mk.atmservice.entity.template.AbsUUIDEntity;
 
 import javax.persistence.*;
 import java.sql.Timestamp;
@@ -14,16 +15,13 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
+@EqualsAndHashCode(callSuper = true)
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity(name = "users")
-public class User implements UserDetails {
-    @Id
-    @GeneratedValue
-    private UUID id;
-
+public class User extends AbsUUIDEntity implements UserDetails {
     @Column(nullable = false)
     private String firstname;
 
@@ -45,13 +43,6 @@ public class User implements UserDetails {
     @ToString.Exclude
     private Set<Role> roles;
 
-    @Column(updatable = false,nullable = false)
-    @CreationTimestamp
-    private Timestamp createdAt;
-
-    @UpdateTimestamp
-    private Timestamp updatedAt;
-
     private String emailCode;
 
     private boolean accountNonExpired = true;
@@ -60,7 +51,7 @@ public class User implements UserDetails {
 
     private boolean credentialsNonExpired = true;
 
-    private boolean enabled ;
+    private boolean enabled;
 
     public User(String firstname, String lastname, String email, String password) {
         this.firstname = firstname;

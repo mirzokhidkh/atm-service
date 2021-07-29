@@ -4,20 +4,17 @@ import lombok.*;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import uz.mk.atmservice.entity.template.AbsIntegerEntity;
 
 import javax.persistence.*;
 
+@EqualsAndHashCode(callSuper = true)
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@EntityListeners(AuditingEntityListener.class)
-public class BankomatSet {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
-
+public class BankomatSet extends AbsIntegerEntity {
     @ManyToOne
     private Banknote banknote;
 

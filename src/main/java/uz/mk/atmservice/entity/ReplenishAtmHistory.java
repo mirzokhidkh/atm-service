@@ -2,21 +2,19 @@ package uz.mk.atmservice.entity;
 
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import uz.mk.atmservice.entity.template.AbsUUIDEntity;
 
 import javax.persistence.*;
 import java.sql.Timestamp;
 import java.util.UUID;
 
+@EqualsAndHashCode(callSuper = true)
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-public class ReplenishAtmHistory {
-    @Id
-    @GeneratedValue
-    private UUID id;
-
+public class ReplenishAtmHistory extends AbsUUIDEntity {
     @ManyToOne
     private Banknote banknote;
 

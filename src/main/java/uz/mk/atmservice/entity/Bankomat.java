@@ -4,26 +4,20 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.*;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
-import org.springframework.data.annotation.CreatedBy;
-import org.springframework.data.annotation.LastModifiedBy;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+import uz.mk.atmservice.entity.template.AbsIntegerEntity;
 
 import javax.persistence.*;
 import java.util.List;
 import java.util.Set;
-import java.util.UUID;
 
+@EqualsAndHashCode(callSuper = true)
 @Getter
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@EntityListeners(AuditingEntityListener.class)
-public class Bankomat {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
-
+public class Bankomat extends AbsIntegerEntity {
     private Double maxMoney;
 
     private Double minMoney;
@@ -51,12 +45,6 @@ public class Bankomat {
     @JsonIgnore
     @OneToMany(mappedBy = "bankomat", cascade = CascadeType.ALL)
     private Set<BankomatSet> bankomatSet;
-
-    @CreatedBy
-    private UUID createdBy;
-
-    @LastModifiedBy
-    private UUID updatedBy;
 
 
     public Double getBalance() {
