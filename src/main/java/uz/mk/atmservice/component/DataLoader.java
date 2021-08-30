@@ -43,7 +43,7 @@ public class DataLoader implements CommandLineRunner {
                     passwordEncoder.encode("123")
             );
             Role director = roleRepository.findByName(RoleName.ROLE_DIRECTOR);
-            Bank ipak_yuli_banki = bankRepository.findByName("IPAK YULI BANKI");
+            Bank ipak_yuli_banki = bankRepository.findByName("IPAK_YULI_BANKI");
             user.setBank(ipak_yuli_banki);
             user.setRoles(Collections.singleton(director));
             user.setEnabled(true);

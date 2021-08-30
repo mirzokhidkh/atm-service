@@ -2,7 +2,7 @@ insert into role (name)
 values ('ROLE_DIRECTOR'),
        ('ROLE_STAFF'),
        ('ROLE_CLIENT'),
-       ('ROLE_CARD');
+       ('ROLE_CARD'),
        ('ROLE_ATM_STAFF');
 
 insert into account_type(name)
@@ -35,7 +35,7 @@ values (1000, 1),
        (100, 2);
 
 insert into bank(name)
-values ('IPAK YULI BANKI'),
-       ('XALQ BANKI'),
+values ('IPAK_YULI_BANKI'),
+       ('XALQ_BANKI'),
        ('AGROBANK'),
        ('ALOQABANK');
